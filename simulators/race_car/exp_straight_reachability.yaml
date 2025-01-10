@@ -1,0 +1,70 @@
+environment:
+  seed: 0
+  num_agents: 1
+  # TRACK
+  track_len: 20
+  track_width_right: .6
+  track_width_left: .6
+  # loop: true
+  timeout: 100
+  # DONE FLAG PARAM
+  end_criterion: failure
+  g_x_fail: 0.25
+  obsrv_type: perfect
+  obs_spec:
+    - [2, -0.4, 0., 0.25, 0.1]
+    - [5, 0.4, 0., 0.25, 0.1]
+    - [8, 0.1, 0., 0.25, 0.1]
+    - [11, -0.1, 0., 0.25, 0.1]
+    - [14, -0.4, 0., 0.25, 0.1]
+    - [14, 0.4, 0., 0.25, 0.1]
+  reset_space:
+    - [0., 1.]
+    - [-0.4, 0.4]
+    - [0.5, 1.5]
+    - [-0.3, 0.3]
+    - [-0.15, 0.15]
+
+cost:
+  bidirectional: false
+  cost_type: Reachability
+  # COST PARAM
+  w_accel: 0.001
+  w_omega: 0.001
+  v_min: 0.4
+  v_max: 1.2
+  yaw_min: -1.5707
+  yaw_max: 1.5707
+  delta_min: -0.35  # rad
+  delta_max: 0.35
+
+agent:
+  agent_id: ego
+  dyn: Bicycle5D
+  footprint: Box
+  state_box_limit: [0., 0.5, -0.1, 0.1]
+  action_range:
+    - [-3.5, 3.5]
+    - [-5., 5.]
+  weight : 2.99  # kg
+  # CAR DYNAMICS
+  wheelbase: 0.257
+  dt: 0.1
+  num_segment: 10
+
+solver:
+  init_state: [0., 0., 0.8, 0.0, 0.0]
+  buffer: 0.01
+  plan_horizon: 40
+  max_iter: 50
+  max_iter_receding: 1000
+  out_folder: experiments/ilqr/bic5D/straight_reach/
+  device: cpu
+  fig_size_x: 20
+  fig_size_y: 4
+  cmap: true
+  cmap_res_x: 500
+  cmap_res_y: 20
+  cmap_min: -0.05
+  cmap_max: 0.05
+  frame_skip: 2
