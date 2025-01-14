@@ -1,6 +1,5 @@
 from typing import Optional, Tuple, Any
 import numpy as np
-from simulators.dynamics.resources.ramp import Ramp
 from simulators.pybullet_debugger import pybulletDebug
 from .resources.plane import Plane
 from .base_dynamics import BaseDynamics
@@ -150,9 +149,6 @@ class BasePybulletDynamics(BaseDynamics):
     p.setPhysicsEngineParameter(fixedTimeStep=self.dt, physicsClientId=self.client)
     p.setRealTimeSimulation(0, physicsClientId=self.client)
     Plane(self.client)
-
-    #! TODO: rewrite this to be more dynamic
-    # Ramp(self.client)
 
     if "terrain_data" in kwargs.keys():
       terrain_data = kwargs["terrain_data"]

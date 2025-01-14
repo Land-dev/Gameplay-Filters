@@ -67,16 +67,16 @@ solver:
   num_critics: 1
   # == hyperparameters of learning ==
   max_steps: 12_000_000
-  opt_period: 10_000
+  opt_period: 20_000
   num_updates_per_opt: 1_000
-  eval_period: 100_000
-  min_steps_b4_opt: 100_000
-  warmup_steps: 100_000
+  eval_period: 200_000
+  min_steps_b4_opt: 200_000
+  warmup_steps: 200_000
   batch_size: 256
   warmup_action_range: *ctrl_range
-  memory_capacity: 200_000
+  memory_capacity: 300_000
   # == logging ==
-  use_wandb: false
+  use_wandb: true
   project_name: gameplay-release
   name: l1_spirit
   max_model: 20
@@ -94,7 +94,7 @@ solver:
     gamma: 0.9
     gamma_decay: 0.1
     gamma_end: 0.999
-    gamma_period: 1_000_000
+    gamma_period: 2_000_000
     gamma_schedule: true
     tau: 0.01
     terminal_type: all  # use min{l_x, g_x} for terminal states/obsrvs.

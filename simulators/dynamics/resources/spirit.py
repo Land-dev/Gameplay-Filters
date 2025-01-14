@@ -280,8 +280,8 @@ class Spirit:
       }
     else:
       safeties = {
-          "corner_height": min(corner_height) - 0.2,
-          "elbow_height": min(elbow_height) - 0.1,
+          "corner_height": min(corner_height) - 0.1,
+          "elbow_height": min(elbow_height) - 0.05,
           "roll": math.pi * 0.5 - abs(roll),
           "pitch": math.pi * 0.5 - abs(pitch)
       }
