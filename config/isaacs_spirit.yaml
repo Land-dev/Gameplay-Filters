@@ -8,7 +8,7 @@ agent:
   dyn: SpiritPybullet
   footprint: none
   verbose: false
-  gui: false
+  gui: true
   gui_imaginary: false
   dt: 0.02
   apply_force: true # warning, currently this will also affect adversarial force
@@ -47,8 +47,20 @@ agent:
       - [-0.1, 0.1]
       - [-0.1, 0.1]
       - [-0.05, 0.05]
-  action_type: increment
+  action_type: center_sampling
   action_center:
+    - 0.4
+    - 1.0
+    - 1.9
+    - 0.4
+    - 1.0
+    - 1.9
+    - -0.4
+    - 1.0
+    - 1.9
+    - -0.4
+    - 1.0
+    - 1.9
   target_margin:
     - corner_height
     - toe_height
@@ -74,28 +86,28 @@ solver:
   num_actors: 2
   num_critics: 1
   # == hyperparameters of learning ==
-  max_steps: 12_000_000
+  max_steps: 20_000_000
   opt_period: 10_000
   num_updates_per_opt: 1_000
   eval_period: 100_000
   min_steps_b4_opt: 100_000
-  warmup_steps: 100_000
+  warmup_steps: 500_000
   batch_size: 256
   ctrl_update_ratio: 2
   warmup_action_range:
     ctrl: *ctrl_range
     dstb: *dstb_range
-  memory_capacity: 200_000
+  memory_capacity: 1_000_000
   softmax_rationality: 3.0
   # == logging ==
-  use_wandb: true
-  project_name: spirit-rl-pybullet
-  name: spirit_isaacs_debug
+  use_wandb: false
+  project_name: gameplay-release
+  name: isaacs_spirit
   max_model: 20
   save_top_k:
     ctrl: 10
     dstb: 10
-  out_folder: train_result/spirit_isaacs_debug
+  out_folder: train_result/isaacs_spirit
   eval:   
     b4_learn: true
     metric: reach-avoid
@@ -131,7 +143,7 @@ solver:
     actor_type: max
     learn_alpha: true
     lr: 0.0001
-    lr_al: 0.0005
+    lr_al: 0.000125
     lr_schedule: false
     lr_al_schedule: false
     alpha: 0.1
@@ -150,7 +162,7 @@ solver:
     actor_type: min
     learn_alpha: true
     lr: 0.0001
-    lr_al: 0.0001
+    lr_al: 0.0000125
     lr_schedule: false
     lr_al_schedule: false
     alpha: 0.1
@@ -158,7 +170,7 @@ solver:
     opt_type: AdamW
     update_period: 2
     lr_end: 0.0001
-    lr_al_end: 0.00005
+    lr_al_end: 0.000005
     lr_period: 50000
     lr_al_period: 100000
     lr_decay: 0.9    
