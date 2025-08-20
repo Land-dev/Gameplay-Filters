@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<robot name="arrow">
+    <link name="arrow_link">
+        <visual>
+            <geometry>
+                <mesh filename="arrow-shorter.obj" />
+            </geometry>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <material name="red">
+            <color rgba="1 0 0 1"/>
+            </material>
+        </visual>
+    </link>
+</robot>
