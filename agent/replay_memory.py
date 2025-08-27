@@ -34,7 +34,9 @@ class Batch(object):
     self.non_final_mask = th.BoolTensor(np.logical_not(np.asarray(batch.done))).to(device)
 
     # obsrv.
-    self.non_final_obsrv_nxt = th.cat(batch.s_)[self.non_final_mask].to(device)
+    #self.non_final_obsrv_nxt = th.cat(batch.s_)[self.non_final_mask].to(device)
+    s_cat = th.cat(batch.s_).to(device)
+    self.non_final_obsrv_nxt = s_cat[self.non_final_mask]
     self.obsrv = th.cat(batch.s).to(device)
 
     # Action.

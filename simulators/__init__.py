@@ -4,12 +4,12 @@ from .base_env import BaseEnv
 from .base_single_env import BaseSingleEnv
 from .base_zs_env import BaseZeroSumEnv
 
-# from .race_car.track import Track
-# from .race_car.race_car_single import RaceCarSingle5DEnv
-# from .race_car.race_car_dstb import RaceCarDstb5DEnv
-# from .race_car.cost_bicycle5D import (
-#     Bicycle5DCost, Bicycle5DConstraint, Bicycle5DReachabilityCost, Bicycle5DRefTrajCost
-# )
+from .race_car.track import Track
+from .race_car.race_car_single import RaceCarSingle5DEnv
+from .race_car.race_car_dstb import RaceCarDstb5DEnv
+from .race_car.cost_bicycle5D import (
+    Bicycle5DCost, Bicycle5DConstraint, Bicycle5DReachabilityCost, Bicycle5DRefTrajCost
+)
 
 from .cost.quadratic_cost import QuadraticCost
 from .cost.half_space_cost import (UpperHalfCost, LowerHalfCost, UpperHalfBoxFootprintCost, LowerHalfBoxFootprintCost)
@@ -45,3 +45,4 @@ from .spirit_rl.spirit_pybullet_single import SpiritPybulletSingleEnv
 from .spirit_rl.spirit_pybullet_zs import SpiritPybulletZeroSumEnv
 from .go2_pybullet.go2_pybullet_single import Go2PybulletSingleEnv
 from .go2_pybullet.go2_pybullet_zs import Go2PybulletZeroSumEnv
+from .dubins_pursuit_evasion import DubinsPursuitEvasionEnv

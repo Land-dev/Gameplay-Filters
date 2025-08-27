@@ -2,91 +2,57 @@ environment:
   seed: 0
   timeout: 300
   end_criterion: failure
+  obs_type: perfect
 
 agent:
   agent_id: ego
-  dyn: SpiritPybullet
-  footprint: none
+  dyn: Dubins6D
+  footprint: Box
   verbose: false
   gui: false
   gui_imaginary: false
-  dt: 0.02
-  apply_force: true # warning, currently this will also affect adversarial force
-  replace_adv_with_dr: false # if true, this will replace the adversarial force with dr force
-  force: 50
-  force_scale: 1.0
-  force_reset_time: 50
-  force_info:
-  link_name: 
-  rotate_reset: true
-  height_reset: both
-  force_type: uniform
-  terrain: normal
-  terrain_height: 0.1
-  terrain_gridsize: 0.2
-  terrain_friction: 1.0
-  envtype: normal
+  dt: 0.05  # time step
+  # Environment parameters
+  goalR: 0.25  # collision radius
+  state_max_x: 3.0  # bounds for state space
+  state_max_y: 2.0  # bounds for state space
+  state_box_limit: [-3.0, 3.0, -2.0, 2.0]  # will be overridden by state_max in environment
+  # Action ranges - Continuous control
   action_range: 
     ctrl: &ctrl_range
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
+      - [-1.9, 1.9]  # omega_e (evader turn rate) - continuous actions
     dstb: &dstb_range
-      - [-1., 1.]
-      - [-1., 1.]
-      - [-1., 1.]
-      - [-0.1, 0.1]
-      - [-0.1, 0.1]
-      - [-0.05, 0.05]
+      - [-1.9, 1.9]  # omega_p (pursuer turn rate) - continuous actions
   action_type: center_sampling
   action_center:
-    - 0.4
-    - 1.0
-    - 1.9
-    - 0.4
-    - 1.0
-    - 1.9
-    - -0.4
-    - 1.0
-    - 1.9
-    - -0.4
-    - 1.0
-    - 1.9
+    - 0.0  # center of discrete actions
+  # Dubins dynamics parameters
+  evader_velocity: 0.6
+  pursuer_velocity: 0.6
+  omega_e_max: 1.9
+  omega_p_max: 1.9
   target_margin:
-    - corner_height
-    - toe_height
-    - body_ang_x
-    - body_ang_y
-    - body_ang_z
-    - x_dot
-    - y_dot
-    - z_dot
+    - collision_distance
+    - evader_bounds_distance
+    - pursuer_bounds_distance
   safety_margin:
-    - corner_height
-    - elbow_height
-  obs_dim: 32
+    - collision
+    - evader_bounds
+    - pursuer_bounds
+  obs_dim: 6
   obsrv_list: &obsrv_list
     ctrl: null
     dstb: null
   reset_criterion: failure
 
 solver:
-  device: cuda
-  rollout_env_device: cuda
+  device: cuda:0
+  rollout_env_device: cuda:0
   num_envs: 1
   num_actors: 2
   num_critics: 1
   # == hyperparameters of learning ==
-  max_steps: 20_000_000
+  max_steps: 15_000_000
   opt_period: 10_000
   num_updates_per_opt: 1_000
   eval_period: 100_000
@@ -102,22 +68,22 @@ solver:
   # == logging ==
   use_wandb: true
   project_name: gameplay-release
-  name: isaacs_spirit
+  name: isaacs_dubins_2
   max_model: 20
   save_top_k:
     ctrl: 10
     dstb: 10
-  out_folder: train_result/isaacs_spirit
+  out_folder: train_result/isaacs_dubins_2
   eval:   
     b4_learn: true
-    metric: reach-avoid
+    metric: safety
     aux_metric: [ep_length, safety]
     num_trajectories: 100
     timeout: 300
-    end_criterion: reach-avoid
-  obs_dim: 32
-  obsrv_list:  *obsrv_list
-  rollout_end_criterion: reach-avoid
+    end_criterion: failure
+  obs_dim: 6
+  obsrv_list: *obsrv_list
+  rollout_end_criterion: failure
   # == hyperparameters of actors and critics ==
   critic_0:
     eval: false
@@ -133,7 +99,7 @@ solver:
     gamma_period: 2_000_000
     gamma_schedule: true
     tau: 0.01
-    mode: reach-avoid
+    mode: safety
     terminal_type: all  # use min{l_x, g_x} for terminal states/obsrvs.
     opt_type: AdamW
     update_target_period: 2
@@ -185,10 +151,10 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 12
+    obsrv_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 1  # Continuous actions: [-1.9, 1.9]
     action_range: *ctrl_range
-    pretrained_path:
+    pretrained_path: /mounted_volume/Gameplay-Filters/train_result/isaacs_dubins/model/ctrl/ctrl-3100000.pth
   actor_1:
     mlp_dim:
       - 256
@@ -197,10 +163,10 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 6
+    obsrv_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 1  # Continuous actions: [-1.9, 1.9]
     action_range: *dstb_range
-    pretrained_path:
+    pretrained_path: /mounted_volume/Gameplay-Filters/train_result/isaacs_dubins/model/dstb/dstb-3100000.pth
   critic_0:
     mlp_dim:
       - 128
@@ -209,12 +175,12 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 18
-    pretrained_path:
+    obsrv_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 2  # [ctrl_action, dstb_action] - discrete action indices
+    pretrained_path: /mounted_volume/Gameplay-Filters/train_result/isaacs_dubins/model/central/central-3100000.pth
 
 eval:
   model_type: [highest, highest] # [ctrl, dstb], highest, safest, worst, manual
   step: [0, 0] # [ctrl, dstb], the step to use if "manual" is chosen for MODEL_TYPE
   eval_timeout: 1000 # how long do we evaluate in real rollout env
-  imaginary_horizon: 300 # the horizon of the imaginary env
+  imaginary_horizon: 300 # the horizon of the imaginary env 

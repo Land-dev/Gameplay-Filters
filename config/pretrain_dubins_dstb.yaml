@@ -1,0 +1,168 @@
+environment:
+  seed: 0
+  timeout: 300
+  end_criterion: failure
+  obs_type: perfect
+
+cost:
+  cost_type: Lagrange
+  set_mode: avoid  # 'avoid', 'reach', or 'reach_avoid'
+
+agent:
+  agent_id: ego
+  dyn: Dubins6D
+  footprint: Box
+  # Environment parameters
+  goalR: 0.25  # collision radius
+  state_max: 2.0  # bounds for state space
+  dt: 0.05  # time step
+  state_box_limit: [-state_max, state_max, -state_max, state_max]  # will be overridden by state_max in environment
+  # Action ranges
+  action_range:
+    ctrl:
+      - [-0.2, 0.2]  # omega_e (evader turn rate) - smaller for pretraining
+    dstb:
+      - [-2.0, 2.0]  # omega_p (pursuer turn rate)
+  # Dubins dynamics parameters
+  evader_velocity: 0.6
+  pursuer_velocity: 0.6
+  omega_e_max: 2.0
+  omega_p_max: 2.0
+
+solver:
+  device: cuda:0
+  # Training parameters
+  num_envs: 8
+  max_steps: 4000000
+  memory_capacity: 50000
+  min_steps_b4_opt: 50000
+  opt_freq: 2000
+  update_per_opt: 200
+  max_model: 50
+  batch_size: 128
+  warmup_action_range: ${agent.action_range.dstb}  # Evaluation parameter
+  dstb_action_range: ${agent.action_range.dstb}
+  check_opt_freq: 25
+  num_eval_traj: 400
+  eval_timeout: 300
+  rollout_end_criterion: failure
+  save_top_k: 10
+  save_metric: safety
+  venv_device: cpu
+  # Visualization parameters
+  fig_size_x: 10
+  fig_size_y: 8
+  cmap_res_x: 250
+  cmap_res_y: 250
+  # Logging parameters
+  use_wandb: true
+  project_name: dubins_pretrain
+  name: dubins_pretrain_dstb
+  out_folder: experiments/dubins_pretrain/dstb
+
+arch:
+  actor_0:
+    mlp_dim:
+      - 256
+      - 256
+      - 256
+    activation: ReLU
+    append_dim: 0
+    latent_dim: 0
+    obs_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 1  # omega_e (weak controller)
+    action_range:
+      - [-0.2, 0.2]
+  actor_1:
+    mlp_dim:
+      - 256
+      - 256
+      - 256
+    activation: ReLU
+    append_dim: 0
+    latent_dim: 0
+    obs_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 1  # omega_p (disturbance to train)
+    action_range: ${agent.action_range.dstb}
+  critic_0:
+    mlp_dim:
+      - 128
+      - 128
+      - 128
+    activation: ReLU
+    append_dim: 0
+    latent_dim: 0
+    obs_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 1  # omega_p
+  critic_1:
+    mlp_dim:
+      - 128
+      - 128
+      - 128
+    activation: ReLU
+    append_dim: 0
+    latent_dim: 0
+    obs_dim: 6  # [x_e, y_e, theta_e, x_p, y_p, theta_p]
+    action_dim: 2  # [omega_e, omega_p]
+
+train:
+  num_actors: 2
+  num_critics: 2
+  critic_0:
+    net_name: central
+    lr: 0.0001
+    lr_schedule: false
+    gamma: 0.999
+    gamma_schedule: false
+    tau: 0.005
+    eval: false
+    mode: safety
+    terminal_type: max
+    device: cuda:0
+    opt_type: AdamW
+    action_src: dstb
+    update_target_period: 2
+  critic_1:
+    net_name: aux
+    lr: 0.0001
+    lr_schedule: false
+    gamma: 0.999
+    gamma_schedule: false
+    tau: 0.005
+    eval: false
+    mode: safety
+    terminal_type: max
+    device: cuda:0
+    opt_type: AdamW
+    action_src: [ctrl, dstb]
+    update_target_period: 2
+  actor_0:
+    net_name: ctrl
+    actor_type: min
+    device: cuda:0
+    eval: true
+    learn_alpha: false
+    lr: 0.0
+    lr_al: 0.0
+    lr_schedule: false
+    lr_al_schedule: false
+    alpha: 0.0
+    pg_target: central
+    opt_type: AdamW
+    update_period: 0
+    load_path: experiments/dubins_pretrain/ctrl/model/ctrl-4000008.pth
+  actor_1:
+    net_name: dstb
+    actor_type: max
+    device: cuda:0
+    eval: false
+    learn_alpha: true
+    lr: 0.0001
+    lr_al: 0.00001
+    lr_schedule: false
+    lr_al_schedule: false
+    alpha: 0.005
+    pg_target: central
+    opt_type: AdamW
+    update_period: 2
+  

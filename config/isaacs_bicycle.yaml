@@ -1,79 +1,98 @@
 environment:
   seed: 0
+  # TRACK
+  track_len: 20
+  track_width_right: .6
+  track_width_left: .6
   timeout: 300
+  # DONE FLAG PARAM
   end_criterion: failure
+  g_x_fail: 0.1
+  obs_type: perfect
+  obs_spec:
+    - [2, -0.4, 0., 0.25, 0.1]
+    - [5, 0.4, 0., 0.25, 0.1]
+    - [8, 0.1, 0., 0.25, 0.1]
+    - [11, -0.1, 0., 0.25, 0.1]
+    - [14, -0.4, 0., 0.25, 0.1]
+    - [14, 0.4, 0., 0.25, 0.1]
+  reset_space:
+    - [0., 1.]
+    - [-0.6, 0.6]
+    - [0.4, 2.0]
+    - [-1.5707, 1.5707]
+    - [-0.35, 0.35]
+
+cost:
+  cost_type: Lagrange
+  bidirectional: false
+  # CONSTRAINT PARAM
+  q1_road: 1.
+  q2_road: 10.
+  q1_yaw: 1.
+  q2_yaw: 10.
+  q1_obs: 1.
+  q2_obs: 10.
+  # COST PARAM
+  track_offset: 0.5
+  w_vel: 4.
+  w_contour: 4.
+  w_theta: 0.
+  w_accel: 0.01
+  w_omega: 0.01
+  v_ref: 1.5
+  barrier_clip_min: -0.25
+  barrier_clip_max: 5.0
+  #
+  yaw_min: -1.5707
+  yaw_max: 1.5707
+  has_vel_constr: false
+  has_delta_constr: false
 
 agent:
   agent_id: ego
-  dyn: SpiritPybullet
-  footprint: none
+  dyn: BicycleDstb5D
+  footprint: Box
+  state_box_limit: [0., 0.5, -0.1, 0.1]
   verbose: false
   gui: false
   gui_imaginary: false
-  dt: 0.02
-  apply_force: true # warning, currently this will also affect adversarial force
-  replace_adv_with_dr: false # if true, this will replace the adversarial force with dr force
-  force: 50
-  force_scale: 1.0
-  force_reset_time: 50
-  force_info:
-  link_name: 
-  rotate_reset: true
-  height_reset: both
-  force_type: uniform
-  terrain: normal
-  terrain_height: 0.1
-  terrain_gridsize: 0.2
-  terrain_friction: 1.0
-  envtype: normal
-  action_range: 
+  dt: 0.1
+  weight : 2.99  # kg
+  # CAR DYNAMICS
+  wheelbase: 0.257
+  num_segment: 10  #! deprecated
+  delta_min: -0.35
+  delta_max: 0.35
+  v_min: 0.4
+  v_max: 2.
+  action_range:
     ctrl: &ctrl_range
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
-      - [-0.5, 0.5]
+      - [-3.5, 3.5]
+      - [-5., 5.]
     dstb: &dstb_range
-      - [-1., 1.]
-      - [-1., 1.]
-      - [-1., 1.]
-      - [-0.1, 0.1]
-      - [-0.1, 0.1]
-      - [-0.05, 0.05]
+      - [-0.4, 0.4]
+      - [-0.4, 0.4]
+      - [-0.4, 0.4]
+      - [-0.4, 0.4]
+      - [-0.4, 0.4]
   action_type: center_sampling
   action_center:
-    - 0.4
-    - 1.0
-    - 1.9
-    - 0.4
-    - 1.0
-    - 1.9
-    - -0.4
-    - 1.0
-    - 1.9
-    - -0.4
-    - 1.0
-    - 1.9
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
+    - 0.0
   target_margin:
-    - corner_height
-    - toe_height
-    - body_ang_x
-    - body_ang_y
-    - body_ang_z
-    - x_dot
-    - y_dot
-    - z_dot
+    - x_pos
+    - y_pos
+    - velocity
+    - yaw
+    - yaw_rate
   safety_margin:
-    - corner_height
-    - elbow_height
-  obs_dim: 32
+    - road_boundary
+    - obstacle_distance
+  obs_dim: 5
   obsrv_list: &obsrv_list
     ctrl: null
     dstb: null
@@ -102,12 +121,12 @@ solver:
   # == logging ==
   use_wandb: true
   project_name: gameplay-release
-  name: isaacs_spirit
+  name: isaacs_bicycle
   max_model: 20
   save_top_k:
     ctrl: 10
     dstb: 10
-  out_folder: train_result/isaacs_spirit
+  out_folder: train_result/isaacs_bicycle
   eval:   
     b4_learn: true
     metric: reach-avoid
@@ -115,7 +134,7 @@ solver:
     num_trajectories: 100
     timeout: 300
     end_criterion: reach-avoid
-  obs_dim: 32
+  obs_dim: 5
   obsrv_list:  *obsrv_list
   rollout_end_criterion: reach-avoid
   # == hyperparameters of actors and critics ==
@@ -185,8 +204,8 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 12
+    obsrv_dim: 5
+    action_dim: 2
     action_range: *ctrl_range
     pretrained_path:
   actor_1:
@@ -197,8 +216,8 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 6
+    obsrv_dim: 5
+    action_dim: 5
     action_range: *dstb_range
     pretrained_path:
   critic_0:
@@ -209,8 +228,8 @@ arch:
     activation: Sin
     append_dim: 0
     latent_dim: 0
-    obsrv_dim: 32
-    action_dim: 18
+    obsrv_dim: 5
+    action_dim: 7
     pretrained_path:
 
 eval:

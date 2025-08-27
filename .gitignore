@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.egg-info/
+wandb/
+train_result/
+script/test_results/

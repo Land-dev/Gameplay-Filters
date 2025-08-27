@@ -33,7 +33,7 @@ def main(config_file):
 
   if cfg.solver.use_wandb:
     import wandb
-    wandb.init(entity='safe-princeton', project=cfg.solver.project_name, name=cfg.solver.name)
+    wandb.init(entity='saslab', project=cfg.solver.project_name, name=cfg.solver.name)
     tmp_cfg = {
         'environment': OmegaConf.to_container(cfg.environment),
         'solver': OmegaConf.to_container(cfg.solver),
@@ -51,10 +51,16 @@ def main(config_file):
     cfg.cost = None
   elif cfg.agent.dyn == "BicycleDstb5D":
     from simulators import RaceCarDstb5DEnv
-    from simulators.race_car.functions import visualize_dstbEnv as visualize
+    # from simulators.race_car.functions import visualize_dstbEnv as visualize
     import jax
     jax.config.update('jax_platform_name', 'cpu')
     env_class = RaceCarDstb5DEnv
+  elif cfg.agent.dyn == "Dubins6D":
+      from simulators import DubinsPursuitEvasionEnv
+      env_class = DubinsPursuitEvasionEnv
+      cfg.cost = None  # Dubins environment handles cost internally
+      import jax
+      jax.config.update('jax_platform_name', 'cpu')
   else:
     raise ValueError("Dynamics type not supported!")
 
