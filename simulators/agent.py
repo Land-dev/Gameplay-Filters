@@ -58,6 +58,9 @@ class Agent:
     elif cfg.dyn == "Drone12D":
       from .dynamics.drone12D import Drone12D
       self.dyn = Drone12D(cfg, action_space)
+    elif cfg.dyn == "Drone20D":
+      from .dynamics.drone20D import Drone20D
+      self.dyn = Drone20D(cfg, action_space)
     else:
       raise ValueError("Dynamics type not supported!")
 

@@ -4,9 +4,9 @@
 # Licensed under The MIT License [see LICENSE for details]
 # --------------------------------------------------------
 
-"""A class for 12D Drone pursuit-evasion environment.
+"""A class for 20D Drone pursuit-evasion environment.
 
-This file implements a zero-sum environment for 12D drone pursuit-evasion games.
+This file implements a zero-sum environment for 20D drone pursuit-evasion games.
 The evader (controller) tries to avoid collision while staying within bounds,
 while the pursuer (disturbance) tries to cause collision.
 """
@@ -23,63 +23,84 @@ from .agent import Agent
 from .utils import ActionZS
 
 
-class DronePursuitEvasionEnv(BaseZeroSumEnv):
+class Drone_20D_PursuitEvasionEnv(BaseZeroSumEnv):
     """
-    Implements a zero-sum environment for 12D drone pursuit-evasion games.
+    Implements a zero-sum environment for 20D drone pursuit-evasion games.
     """
 
     def __init__(self, cfg_env: Any, cfg_agent: Any, cfg_cost: Any) -> None:
         super().__init__(cfg_env, cfg_agent)
         
         # Initialize your dynamics
-        if cfg_agent.dyn == "Drone12D":
+        if cfg_agent.dyn == "Drone20D":
             self.agent.dyn = self.agent.dyn  # Already set by parent class
         
         # Set up cost function parameters
         self.cost_params = cfg_cost
         
         # Core parameters - now read from agent config
-        self.goalR = getattr(cfg_agent, 'goalR', 0.36)  # collision radius - central parameter
-        self.state_max_x = getattr(cfg_agent, 'state_max_x', 4.0)  # environment boundary
-        self.state_max_y = getattr(cfg_agent, 'state_max_y', 2.0)  # environment boundary
-        self.state_max_z = getattr(cfg_agent, 'state_max_z', 2.0)  # environment boundary
+        self.goalR = self.agent.dyn.capture_radius  # collision radius
         self.timeout = getattr(cfg_env, 'timeout', 300)  # max steps per episode
         self.set_mode = getattr(cfg_cost, 'set_mode', 'avoid')  # 'avoid', 'reach', or 'reach_avoid'
         self.obs_type = getattr(cfg_env, 'obs_type', 'perfect')  # observation type
         self.dt = getattr(cfg_env, 'dt', 0.02)  # time step
-        self.max_v = getattr(cfg_agent, 'max_v', 2.0)
+        
+        # Get parameters from dynamics class to ensure consistency
+        self.max_v = self.agent.dyn.max_v
+        self.max_angle = self.agent.dyn.max_angle
+        self.max_omega = self.agent.dyn.max_omega
+        self.state_max_x = self.agent.dyn.state_max_x
+        self.state_max_y = self.agent.dyn.state_max_y
+        self.state_max_z = self.agent.dyn.state_max_z
         
         # Define state dimension
-        self.state_dim = 12  # [p1_x, v1_x, p1_y, v1_y, p1_z, v1_z, p2_x, v2_x, p2_y, v2_y, p2_z, v2_z]
+        self.state_dim = 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, 
+                             #  x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
         
         # Initialize state space bounds
         self.state_low = np.array([
-            -self.state_max_x,  # p1_x
-            -self.max_v,                     # v1_x
-            -self.state_max_y,  # p1_y
-            -self.max_v,                     # v1_y
-            0.0,                      # p1_z
-            -self.max_v,                     # v1_z
-            -self.state_max_x,  # p2_x
-            -self.max_v,                     # v2_x
-            -self.state_max_y,  # p2_y
-            -self.max_v,                     # v2_y
-            0.0,                      # p2_z
-            -self.max_v                      # v2_z
+            -self.state_max_x,  # x1
+            -self.max_v,        # v1_x
+            -self.max_angle,    # θ1_x
+            -self.max_omega,    # ω1_x
+            -self.state_max_y,  # y1
+            -self.max_v,        # v1_y
+            -self.max_angle,    # θ1_y
+            -self.max_omega,    # ω1_y
+            0.0,                # z1
+            -self.max_v,        # v1_z
+            -self.state_max_x,  # x2
+            -self.max_v,        # v2_x
+            -self.max_angle,    # θ2_x
+            -self.max_omega,    # ω2_x
+            -self.state_max_y,  # y2
+            -self.max_v,        # v2_y
+            -self.max_angle,    # θ2_y
+            -self.max_omega,    # ω2_y
+            0.0,                # z2
+            -self.max_v         # v2_z
         ])
         self.state_high = np.array([
-            self.state_max_x,   # p1_x
-            self.max_v,                      # v1_x
-            self.state_max_y,   # p1_y
-            self.max_v,                      # v1_y
-            self.state_max_z,   # p1_z
-            self.max_v,                      # v1_z
-            self.state_max_x,   # p2_x
-            self.max_v,                      # v2_x
-            self.state_max_y,   # p2_y
-            self.max_v,                      # v2_y
-            self.state_max_z,   # p2_z
-            self.max_v                       # v2_z
+            self.state_max_x,   # x1
+            self.max_v,         # v1_x
+            self.max_angle,     # θ1_x
+            self.max_omega,     # ω1_x
+            self.state_max_y,   # y1
+            self.max_v,         # v1_y
+            self.max_angle,     # θ1_y
+            self.max_omega,     # ω1_y
+            self.state_max_z,   # z1
+            self.max_v,         # v1_z
+            self.state_max_x,   # x2
+            self.max_v,         # v2_x
+            self.max_angle,     # θ2_x
+            self.max_omega,     # ω2_x
+            self.state_max_y,   # y2
+            self.max_v,         # v2_y
+            self.max_angle,     # θ2_y
+            self.max_omega,     # ω2_y
+            self.state_max_z,   # z2
+            self.max_v          # v2_z
         ])
         
         # Set up visualization bounds
@@ -92,15 +113,15 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
         # Initialize observation and reset spaces
         self.build_obs_rst_space(cfg_env, cfg_agent, cfg_cost)
         
-        # Override action spaces for continuous actions - matching config
-        # Control (evader): [a1_x, a1_y, a1_z] where z has minimum 0.25 for hover
+        # Override action spaces for continuous actions - matching 20D dynamics
+        # Control (evader): [S1_x, S1_y, T1_z] where S are torques and T is thrust
         self.action_space_ctrl = spaces.Box(
             low=np.array([-1.0, -1.0, 0.25]), 
             high=np.array([1.0, 1.0, 1.0]), 
             shape=(3,), 
             dtype=np.float32
         )
-        # Disturbance (pursuer): [a2_x, a2_y, a2_z] where z has minimum 0.25 for hover
+        # Disturbance (pursuer): [S2_x, S2_y, T2_z] where S are torques and T is thrust
         self.action_space_dstb = spaces.Box(
             low=np.array([-1.0, -1.0, 0.25]), 
             high=np.array([1.0, 1.0, 1.0]), 
@@ -122,7 +143,8 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
         """Define safety constraints.
         
         Args:
-            state: Current state [p1_x, v1_x, p1_y, v1_y, p1_z, v1_z, p2_x, v2_x, p2_y, v2_y, p2_z, v2_z]
+            state: Current state [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, 
+                                 x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
             action: Dictionary with 'ctrl' and 'dstb' actions
             state_nxt: Next state
             
@@ -132,7 +154,7 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
         constraints = {}
         
         # Use the boundary function from dynamics for safety constraint
-        # This includes both collision detection (truncated cone) and bounds checking
+        # This includes both collision detection (ellipse) and bounds checking
         boundary_value = self.agent.dyn.boundary_fn(state)
         constraints['safety'] = np.array([[boundary_value]])
         
@@ -300,7 +322,8 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
         """Define observation space.
         
         Args:
-            state: Current state [p1_x, v1_x, p1_y, v1_y, p1_z, v1_z, p2_x, v2_x, p2_y, v2_y, p2_z, v2_z]
+            state: Current state [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, 
+                                 x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
             
         Returns:
             Observation array
@@ -310,13 +333,14 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
             return state.copy()
         elif self.obs_type == 'relative':
             # Relative observation - return relative positions and velocities
-            p1_x, v1_x, p1_y, v1_y, p1_z, v1_z = state[0], state[1], state[2], state[3], state[4], state[5]
-            p2_x, v2_x, p2_y, v2_y, p2_z, v2_z = state[6], state[7], state[8], state[9], state[10], state[11]
+            # Extract positions and velocities for both drones
+            x1, v1_x, y1, v1_y, z1, v1_z = state[0], state[1], state[4], state[5], state[8], state[9]
+            x2, v2_x, y2, v2_y, z2, v2_z = state[10], state[11], state[14], state[15], state[18], state[19]
             
             # Relative positions and velocities
-            rel_x = p2_x - p1_x
-            rel_y = p2_y - p1_y
-            rel_z = p2_z - p1_z
+            rel_x = x2 - x1
+            rel_y = y2 - y1
+            rel_z = z2 - z1
             rel_vx = v2_x - v1_x
             rel_vy = v2_y - v1_y
             rel_vz = v2_z - v1_z
@@ -342,7 +366,7 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
             raise ValueError(f"Unknown observation type: {self.obs_type}")
         
         self.observation_space = spaces.Box(
-            low=-np.inf, high=np.inf, shape=(obs_dim,), dtype=np.float32
+            low=self.state_low, high=self.state_high, shape=(obs_dim,), dtype=np.float32
         )
         
         # Reset space (same as state space)
@@ -350,11 +374,12 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
             low=self.state_low, high=self.state_high, dtype=np.float32
         )
 
-    def reset(self, state: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def reset(self, state: Optional[np.ndarray] = None, cast_torch: bool = False, **kwargs) -> Union[np.ndarray, torch.Tensor]:
         """Reset the environment.
         
         Args:
             state: Initial state (optional)
+            cast_torch: Whether to cast observation to torch tensor
             **kwargs: Additional arguments
             
         Returns:
@@ -367,78 +392,86 @@ class DronePursuitEvasionEnv(BaseZeroSumEnv):
             self.state = self.reset_space.sample()
             
             # Ensure initial positions are within bounds
-            self.state[0] = np.clip(self.state[0], -self.state_max_x, self.state_max_x)  # p1_x
-            self.state[2] = np.clip(self.state[2], -self.state_max_y, self.state_max_y)  # p1_y
-            self.state[4] = np.clip(self.state[4], 0.0, self.state_max_z)  # p1_z
-            self.state[6] = np.clip(self.state[6], -self.state_max_x, self.state_max_x)  # p2_x
-            self.state[8] = np.clip(self.state[8], -self.state_max_y, self.state_max_y)  # p2_y
-            self.state[10] = np.clip(self.state[10], 0.0, self.state_max_z)  # p2_z
+            self.state[0] = np.clip(self.state[0], -self.state_max_x, self.state_max_x)  # x1
+            self.state[4] = np.clip(self.state[4], -self.state_max_y, self.state_max_y)  # y1
+            self.state[8] = np.clip(self.state[8], 0.0, self.state_max_z)  # z1
+            self.state[10] = np.clip(self.state[10], -self.state_max_x, self.state_max_x)  # x2
+            self.state[14] = np.clip(self.state[14], -self.state_max_y, self.state_max_y)  # y2
+            self.state[18] = np.clip(self.state[18], 0.0, self.state_max_z)  # z2
             
             # Ensure initial velocities are within limits
-            max_v = 2.0
-            self.state[1] = np.clip(self.state[1], -max_v, max_v)  # v1_x
-            self.state[3] = np.clip(self.state[3], -max_v, max_v)  # v1_y
-            self.state[5] = np.clip(self.state[5], -max_v, max_v)  # v1_z
-            self.state[7] = np.clip(self.state[7], -max_v, max_v)  # v2_x
-            self.state[9] = np.clip(self.state[9], -max_v, max_v)  # v2_y
-            self.state[11] = np.clip(self.state[11], -max_v, max_v)  # v2_z
+            self.state[1] = np.clip(self.state[1], -self.max_v, self.max_v)  # v1_x
+            self.state[5] = np.clip(self.state[5], -self.max_v, self.max_v)  # v1_y
+            self.state[9] = np.clip(self.state[9], -self.max_v, self.max_v)  # v1_z
+            self.state[11] = np.clip(self.state[11], -self.max_v, self.max_v)  # v2_x
+            self.state[15] = np.clip(self.state[15], -self.max_v, self.max_v)  # v2_y
+            self.state[19] = np.clip(self.state[19], -self.max_v, self.max_v)  # v2_z
+            
+            # Ensure initial angles are within limits
+            self.state[2] = np.clip(self.state[2], -self.max_angle, self.max_angle)  # θ1_x
+            self.state[6] = np.clip(self.state[6], -self.max_angle, self.max_angle)  # θ1_y
+            self.state[12] = np.clip(self.state[12], -self.max_angle, self.max_angle)  # θ2_x
+            self.state[16] = np.clip(self.state[16], -self.max_angle, self.max_angle)  # θ2_y
+            
+            # Ensure initial angular velocities are within limits
+            self.state[3] = np.clip(self.state[3], -self.max_omega, self.max_omega)  # ω1_x
+            self.state[7] = np.clip(self.state[7], -self.max_omega, self.max_omega)  # ω1_y
+            self.state[13] = np.clip(self.state[13], -self.max_omega, self.max_omega)  # ω2_x
+            self.state[17] = np.clip(self.state[17], -self.max_omega, self.max_omega)  # ω2_y
+            
+            # Ensure initial separation is safe (greater than collision radius × 4)
+            p1 = np.array([self.state[0], self.state[4], self.state[8]])  # evader position [x1, y1, z1]
+            p2 = np.array([self.state[10], self.state[14], self.state[18]])  # pursuer position [x2, y2, z2]
+            initial_dist = np.linalg.norm(p1 - p2)
+            
+            if initial_dist < self.goalR * 2:
+                # Move pursuer away from evader to ensure safe initial separation
+                direction = (p2 - p1) / (initial_dist + 1e-8)  # avoid division by zero
+                safe_position = p1 + direction * self.goalR * 4
+                
+                # Update pursuer position while keeping within bounds
+                self.state[10] = np.clip(safe_position[0], -self.state_max_x, self.state_max_x)  # x2
+                self.state[14] = np.clip(safe_position[1], -self.state_max_y, self.state_max_y)  # y2
+                self.state[18] = np.clip(safe_position[2], 0.0, self.state_max_z)  # z2
         
         self.cnt = 0
-        return self.get_obsrv(self.state)
+        obsrv = self.get_obsrv(self.state)
+        if cast_torch:
+            obsrv = torch.FloatTensor(obsrv)
+        return obsrv
 
-    def step(self, action: Dict[str, np.ndarray]) -> Tuple[np.ndarray, float, bool, Dict]:
+    def step(self, action: ActionZS, cast_torch: bool = False) -> Tuple[Union[np.ndarray, torch.Tensor], float, bool, Dict]:
         """Take a step in the environment.
         
         Args:
             action: Dictionary with 'ctrl' and 'dstb' actions
+            cast_torch: Whether to cast observation to torch tensor
             
         Returns:
             Tuple of (observation, reward, done, info)
         """
-        # Get constraints for current state
-        constraints = self.get_constraints(self.state, action, self.state)
-        
-        # Integrate dynamics
-        state_nxt, ctrl_clip, dstb_clip = self.agent.dyn.integrate_forward(
-            self.state, action['ctrl'], adversary=action['dstb']
-        )
-        
-        # Update state
-        self.state = state_nxt.copy()
-        self.cnt += 1
-        
-        # Get constraints for next state
-        constraints_nxt = self.get_constraints(self.state, action, self.state)
-        
-        # Get targets
-        targets = self.get_target_margin(self.state, action, self.state)
-        
-        # Check termination
-        done, info = self.get_done_and_info(self.state, constraints_nxt, targets)
-        
-        # Compute reward
-        reward = self.get_cost(self.state, action, self.state, constraints_nxt)
-        
-        # Add additional info
-        info.update({
-            'ctrl_clip': ctrl_clip,
-            'dstb_clip': dstb_clip,
-            'constraints': constraints_nxt,
-            'targets': targets
-        })
-        
-        return self.get_obsrv(self.state), reward, done, info
+        # Use parent class step method which handles the training pipeline properly
+        return super().step(action, cast_torch)
+
+    def render(self):
+        """Render the environment (placeholder)."""
+        print(f"State: {self.state}")
+        print(f"Evader: ({self.state[0]:.2f}, {self.state[4]:.2f}, {self.state[8]:.2f})")
+        print(f"Pursuer: ({self.state[10]:.2f}, {self.state[14]:.2f}, {self.state[18]:.2f})")
+        print(f"Distance: {np.sqrt((self.state[0]-self.state[10])**2 + (self.state[4]-self.state[14])**2 + (self.state[8]-self.state[18])**2):.2f}")
 
     def report(self) -> None:
         """Print environment information."""
-        print("=== Drone Pursuit-Evasion Environment ===")
+        print("=== Drone 20D Pursuit-Evasion Environment ===")
         print(f"State dimension: {self.state_dim}")
         print(f"Control dimension: {self.action_space_ctrl.shape[0]}")
         print(f"Disturbance dimension: {self.action_space_dstb.shape[0]}")
         print(f"Collision radius: {self.goalR}")
-        print(f"Environment bounds: X=[-{self.state_max_x}, {self.state_max_x}], Y=[-{self.state_max_y}, {self.state_max_y}], Z=[0, {self.state_max_z}]")
+        print(f"Environment bounds: X=[-{self.state_max_x}, {self.state_max_x}], Y=[-{self.state_max_y}, {self.state_max_y}], Z=[0.0, {self.state_max_z}]")
         print(f"Timeout: {self.timeout} steps")
         print(f"Time step: {self.dt}")
         print(f"Observation type: {self.obs_type}")
         print(f"Set mode: {self.set_mode}")
+        print(f"Max angle: {self.max_angle}")
+        print(f"Max angular velocity: {self.max_omega}")
         print("=========================================")

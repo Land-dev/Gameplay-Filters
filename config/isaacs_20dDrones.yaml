@@ -1,0 +1,205 @@
+environment:
+  seed: 0
+  timeout: 300
+  end_criterion: failure
+  obs_type: perfect
+
+agent:
+  agent_id: ego
+  dyn: Drone20D
+  footprint: Box
+  verbose: false
+  gui: false
+  gui_imaginary: false
+  dt: 0.02  # time step
+  # Environment parameters
+  goalR: 0.25  # collision radius
+  state_max_x: 4.0  # bounds for state space
+  state_max_y: 2.0  # bounds for state space
+  state_max_z: 2.0  # bounds for state space
+  state_box_limit: [-4.0, 4.0, -2.0, 2.0, 0.0, 2.0]  # will be overridden by state_max in environment
+  # Action ranges - Continuous control (torque and thrust)
+  action_range: 
+    ctrl: &ctrl_range
+      - [-1.0, 1.0]  # S1_x (evader x torque)
+      - [-1.0, 1.0]  # S1_y (evader y torque)
+      - [0.25, 1.0]  # T1_z (evader z thrust) - minimum 0.25 for hover
+    dstb: &dstb_range
+      - [-1.0, 1.0]  # S2_x (pursuer x torque)
+      - [-1.0, 1.0]  # S2_y (pursuer y torque)
+      - [0.25, 1.0]  # T2_z (pursuer z thrust) - minimum 0.25 for hover
+  action_type: center_sampling
+  action_center:
+    - 0.0  # center of discrete actions
+    - 0.0
+    - 0.625  # center of z thrust (average of 0.25 and 1.0)
+  # Drone dynamics parameters
+  thrust_max: 16.0  # Maximum thrust
+  max_angle: 0.3  # Maximum angle (radians)
+  max_torque: 0.3  # Maximum torque
+  control_max: 1.0  # Maximum control magnitude
+  disturbance_max: 1.0  # Maximum disturbance magnitude
+  k_T: 0.83  # Thrust coefficient
+  Gz: -9.81  # Gravity acceleration
+  max_v: 2.0  # Maximum velocity
+  max_omega: 2.0  # Maximum angular velocity
+  # Drone dynamics parameters
+  d0: 20.0  # Angular velocity damping coefficient
+  d1: 4.5   # Angle damping coefficient
+  n0: 18.0  # Torque scaling coefficient
+  mass: 1.0  # Drone mass
+  c_x: 0.3  # Drag coefficient for x direction
+  c_y: 0.3  # Drag coefficient for y direction
+  target_margin:
+    - collision_distance
+    - evader_bounds_distance
+    - pursuer_bounds_distance
+  safety_margin:
+    - collision
+    - evader_bounds
+    - pursuer_bounds
+  obs_dim: 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
+  obsrv_list: &obsrv_list
+    ctrl: null
+    dstb: null
+  reset_criterion: failure
+
+solver:
+  device: cuda:1
+  rollout_env_device: cuda:1
+  num_envs: 1
+  num_actors: 2
+  num_critics: 1
+  # == hyperparameters of learning ==
+  max_steps: 15_000_000
+  opt_period: 10_000
+  num_updates_per_opt: 1_000
+  eval_period: 100_000
+  min_steps_b4_opt: 100_000
+  warmup_steps: 500_000
+  batch_size: 256
+  ctrl_update_ratio: 2
+  warmup_action_range:
+    ctrl: *ctrl_range
+    dstb: *dstb_range
+  memory_capacity: 1_000_000
+  softmax_rationality: 3.0
+  # == logging ==
+  use_wandb: true
+  project_name: gameplay-release
+  name: isaacs_drone_20d
+  max_model: 20
+  save_top_k:
+    ctrl: 10
+    dstb: 10
+  out_folder: train_result/isaacs_drone_20d
+  eval:   
+    b4_learn: true
+    metric: safety
+    aux_metric: [ep_length, safety]
+    num_trajectories: 100
+    timeout: 300
+    end_criterion: failure
+  obs_dim: 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
+  obsrv_list: *obsrv_list
+  rollout_end_criterion: failure
+  # == hyperparameters of actors and critics ==
+  critic_0:
+    eval: false
+    net_name: central
+    lr: 0.0001
+    lr_schedule: false
+    lr_end: 0.0001
+    lr_period: 50000
+    lr_decay: 0.9
+    gamma: 0.9
+    gamma_decay: 0.1
+    gamma_end: 0.999
+    gamma_period: 2_000_000
+    gamma_schedule: true
+    tau: 0.01
+    mode: safety
+    terminal_type: all  # use min{l_x, g_x} for terminal states/obsrvs.
+    opt_type: AdamW
+    update_target_period: 2
+  actor_0:
+    eval: false
+    net_name: ctrl
+    actor_type: max
+    learn_alpha: true
+    lr: 0.0001
+    lr_al: 0.000125
+    lr_schedule: false
+    lr_al_schedule: false
+    alpha: 0.1
+    min_alpha: 0.001
+    opt_type: AdamW
+    update_period: 2
+    lr_end: 0.0001
+    lr_al_end: 0.00005
+    lr_period: 50000
+    lr_al_period: 100000
+    lr_decay: 0.9    
+    lr_al_decay: 0.9
+  actor_1:
+    eval: false
+    net_name: dstb
+    actor_type: min
+    learn_alpha: true
+    lr: 0.0001
+    lr_al: 0.0000125
+    lr_schedule: false
+    lr_al_schedule: false
+    alpha: 0.1
+    min_alpha: 0.001
+    opt_type: AdamW
+    update_period: 2
+    lr_end: 0.0001
+    lr_al_end: 0.000005
+    lr_period: 50000
+    lr_al_period: 100000
+    lr_decay: 0.9    
+    lr_al_decay: 0.9
+
+arch:
+  actor_0:
+    mlp_dim:
+      - 256
+      - 256
+      - 256
+    activation: Sin
+    append_dim: 0
+    latent_dim: 0
+    obsrv_dim: 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
+    action_dim: 3  # Continuous actions: [S1_x, S1_y, T1_z]
+    action_range: *ctrl_range
+    pretrained_path: null
+  actor_1:
+    mlp_dim:
+      - 256
+      - 256
+      - 256
+    activation: Sin
+    append_dim: 0
+    latent_dim: 0
+    obsrv_dim: 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
+    action_dim: 3  # Continuous actions: [S2_x, S2_y, T2_z]
+    action_range: *dstb_range
+    pretrained_path: null
+  critic_0:
+    mlp_dim:
+      - 128
+      - 128
+      - 128
+    activation: Sin
+    append_dim: 0
+    latent_dim: 0
+    obsrv_dim: 20  # [x1, v1_x, θ1_x, ω1_x, y1, v1_y, θ1_y, ω1_y, z1, v1_z, x2, v2_x, θ2_x, ω2_x, y2, v2_y, θ2_y, ω2_y, z2, v2_z]
+    action_dim: 6  # [ctrl_action, dstb_action] - continuous action values
+    pretrained_path: null
+
+eval:
+  model_type: [highest, highest] # [ctrl, dstb], highest, safest, worst, manual
+  step: [0, 0] # [ctrl, dstb], the step to use if "manual" is chosen for MODEL_TYPE
+  eval_timeout: 1000 # how long do we evaluate in real rollout env
+  imaginary_horizon: 300 # the horizon of the imaginary env

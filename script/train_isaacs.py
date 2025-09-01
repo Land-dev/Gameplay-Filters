@@ -52,13 +52,25 @@ def main(config_file):
   elif cfg.agent.dyn == "BicycleDstb5D":
     from simulators import RaceCarDstb5DEnv
     # from simulators.race_car.functions import visualize_dstbEnv as visualize
-    import jax
+    import jaxa
     jax.config.update('jax_platform_name', 'cpu')
     env_class = RaceCarDstb5DEnv
   elif cfg.agent.dyn == "Dubins6D":
       from simulators import DubinsPursuitEvasionEnv
       env_class = DubinsPursuitEvasionEnv
       cfg.cost = None  # Dubins environment handles cost internally
+      import jax
+      jax.config.update('jax_platform_name', 'cpu')
+  elif cfg.agent.dyn == "Drone12D":
+      from simulators import Drone_12D_PursuitEvasionEnv
+      env_class = Drone_12D_PursuitEvasionEnv
+      cfg.cost = None  # Drone environment handles cost internally
+      import jax
+      jax.config.update('jax_platform_name', 'cpu')
+  elif cfg.agent.dyn == "Drone20D":
+      from simulators import Drone_20D_PursuitEvasionEnv
+      env_class = Drone_20D_PursuitEvasionEnv
+      cfg.cost = None  # Drone environment handles cost internally
       import jax
       jax.config.update('jax_platform_name', 'cpu')
   else:

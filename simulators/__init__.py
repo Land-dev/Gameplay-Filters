@@ -46,3 +46,5 @@ from .spirit_rl.spirit_pybullet_zs import SpiritPybulletZeroSumEnv
 from .go2_pybullet.go2_pybullet_single import Go2PybulletSingleEnv
 from .go2_pybullet.go2_pybullet_zs import Go2PybulletZeroSumEnv
 from .dubins_pursuit_evasion import DubinsPursuitEvasionEnv
+from .drone_12d_env import Drone_12D_PursuitEvasionEnv
+from .drone_20d_env import Drone_20D_PursuitEvasionEnv

@@ -17,7 +17,6 @@ jax.config.update('jax_platform_name', 'cpu')
 
 from agent import ISAACS
 from simulators import DubinsPursuitEvasionEnv
-from utils.eval import evaluate_zero_sum
 
 
 def load_trained_model(config_path, model_folder, ctrl_step, dstb_step):
